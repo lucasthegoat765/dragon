@@ -3,23 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dragon Flight Simulator</title>
+    <title>Block Fighter</title>
     <style>
-        body {
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            overflow: hidden;
-            background-color: #87CEEB;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            user-select: none;
         }
 
-        #game-canvas {
-            width: 100vw;
+        body {
+            background-color: #111;
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             height: 100vh;
+            overflow: hidden;
+        }
+
+        #game-wrapper {
+            position: relative;
+            display: inline-block;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            border: 4px solid #333;
+            background: #222;
+        }
+
+        /* Responsive Canvas Scaling */
+        canvas {
+            max-width: 100vw;
+            max-height: 100vh;
             display: block;
         }
 
+        /* UI Overlays */
         #ui-layer {
             position: absolute;
             top: 0;
@@ -27,1581 +46,686 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            padding: 20px;
         }
 
-        #crosshair {
-            width: 10px;
-            height: 10px;
-            background-color: rgba(255, 255, 255, 0.5);
-            border-radius: 50%;
+        .health-bar-container {
+            position: relative;
+            width: 40%;
+            height: 30px;
+            background-color: #eb0000;
+            border: 2px solid white;
+        }
+
+        #player1-health {
+            background-color: #3b82f6;
+            height: 100%;
+            width: 100%;
+            transition: width 0.2s ease-out;
+            transform-origin: left;
+        }
+
+        #player2-health {
+            background-color: #ef4444;
+            height: 100%;
+            width: 100%;
+            transition: width 0.2s ease-out;
+            transform-origin: right;
+            float: right;
+        }
+
+        #timer {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 80px;
+            background-color: #333;
+            border: 4px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #fbbf24;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        #result {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-        }
-
-        #start-menu {
-            pointer-events: auto;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 40px;
-            border-radius: 16px;
+            font-size: 4rem;
+            font-weight: bold;
+            color: white;
             text-align: center;
-            color: white;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            backdrop-filter: blur(5px);
-        }
-
-        h1 {
-            margin-top: 0;
-            font-size: 2.5rem;
-            color: #ffaa00;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        p {
-            font-size: 1.1rem;
-            line-height: 1.6;
-            margin-bottom: 20px;
-            color: #ddd;
-        }
-
-        .controls {
-            text-align: left;
-            background: rgba(255,255,255,0.1);
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-        }
-
-        .controls span {
-            color: #ffaa00;
-            font-weight: bold;
-        }
-
-        button {
-            background: #ff5500;
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            font-size: 1.2rem;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-
-        button:hover {
-            background: #ff7700;
-        }
-
-        button:active {
-            transform: scale(0.95);
-        }
-
-        #hud {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            color: white;
-            font-size: 1.2rem;
-            text-shadow: 1px 1px 2px black;
+            text-shadow: 4px 4px 0px #000;
             display: none;
+            z-index: 20;
+            width: 100%;
         }
 
-        .speed-bar-container {
-            width: 200px;
-            height: 10px;
-            background: rgba(0,0,0,0.5);
-            border-radius: 5px;
-            margin-top: 5px;
-            overflow: hidden;
-        }
-
-        #speed-bar {
+        /* --- Character Select Screen Styles --- */
+        #character-select {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
             height: 100%;
-            width: 50%;
-            background: linear-gradient(90deg, #ffaa00, #ff0000);
-            transition: width 0.1s;
+            background: rgba(17, 17, 17, 0.95);
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
+
+        .select-container {
+            display: flex;
+            gap: 50px;
+            margin: 20px 0;
+        }
+
+        .player-select {
+            background: #222;
+            padding: 20px;
+            border: 2px solid #444;
+            border-radius: 10px;
+            text-align: center;
+            width: 250px;
+        }
+
+        .char-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 2px solid transparent;
+            background: #333;
+            color: white;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            transition: 0.2s;
+            border-radius: 5px;
+        }
+        
+        .char-btn:hover { background: #555; }
+        .p1-active { border-color: #3b82f6; background: rgba(59, 130, 246, 0.2); }
+        .p2-active { border-color: #ef4444; background: rgba(239, 68, 68, 0.2); }
+
+        .stat-text {
+            font-size: 0.8rem;
+            color: #aaa;
+            display: block;
+            margin-top: 5px;
+        }
+
+        #start-btn {
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            background: #fbbf24;
+            color: black;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+        
+        #start-btn:hover { transform: scale(1.05); }
+        #start-btn:disabled { background: #555; color: #888; cursor: not-allowed; transform: none; }
+
+        .controls-info {
+            margin-top: 20px;
+            display: flex;
+            gap: 40px;
+            text-align: center;
+            background: rgba(0,0,0,0.5);
+            padding: 15px 30px;
+            border-radius: 10px;
+        }
+
+        .controls-info h3 {
+            margin-bottom: 10px;
+            color: #fbbf24;
+        }
+        
+        .p1-color { color: #3b82f6; }
+        .p2-color { color: #ef4444; }
+
     </style>
 </head>
 <body>
 
-    <div id="ui-layer">
-        <div id="start-menu">
-            <h1>Dragon Flight</h1>
-            <p>Take to the skies and rule the low-poly mountains.</p>
-            <div class="controls">
-                <div><span>Mouse</span> - Look around / Steer</div>
-                <div><span>W / S</span> - Walk / Fly</div>
-                <div><span>Space</span> - Take Off / Jump</div>
-                <div><span>E</span> - Mount / Dismount (Adult Only)</div>
-                <div><span>F</span> - Befriend Wild Dragon (Human)</div>
-                <div><span>B</span> - Build House (Cost: 5 Wood)</div>
-                <div><span>H</span> - Build Big House / Hunter (Cost: 10 Wood)</div>
-                <div><span>N</span> - Build Breeding Nest on Tree (10W, 5L, 15M)</div>
-                <div><span>Left Click</span> - Chop Tree / Attack / Breathe Fire</div>
-                <div><span>Right Click</span> - Big Attack!</div>
-                <div style="margin-top: 10px; color: #4c9a2a;"><span>Goal:</span> Walk around as a human to collect treats for your baby dragon!</div>
+    <!-- --- Character Select Screen --- -->
+    <div id="character-select">
+        <h1 style="color: #fbbf24; margin-bottom: 20px; font-size: 3rem;">SELECT FIGHTER</h1>
+        <div class="select-container">
+            <div class="player-select">
+                <h2 class="p1-color" style="margin-bottom: 10px;">Player 1</h2>
+                <div id="p1-options"></div>
             </div>
-            <button id="start-btn">Start Adventure</button>
-        </div>
-        <div id="crosshair" style="display: none;"></div>
-        
-        <div id="interact-prompt" style="position: absolute; bottom: 20%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); color: #ffaa00; padding: 10px 20px; border-radius: 8px; font-weight: bold; font-size: 1.2rem; display: none; text-transform: uppercase;">
-            Press E to Mount
-        </div>
-
-        <div id="action-msg" style="position: absolute; top: 30%; left: 50%; transform: translateX(-50%); color: #ffaa00; font-weight: bold; font-size: 2rem; display: none; text-shadow: 2px 2px 4px black; text-transform: uppercase;">
-            Item Found!
-        </div>
-
-        <!-- Human Inventory HUD -->
-        <div id="human-hud" style="position: absolute; top: 20px; right: 20px; color: white; font-size: 1.2rem; text-shadow: 1px 1px 2px black; display: none; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; backdrop-filter: blur(2px);">
-            <div style="color: #4c9a2a; font-weight: bold; margin-bottom: 5px; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 1px;">Inventory</div>
-            <div>Wood: <span id="wood-text" style="color: #ffaa00; font-weight: bold;">0</span></div>
-            <div>Meat: <span id="meat-text" style="color: #ff0055; font-weight: bold;">0</span></div>
-            <div>Leather: <span id="leather-text" style="color: #8b4513; font-weight: bold;">0</span></div>
-            <div style="margin-top: 10px; font-size: 1rem; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 5px;">Big Attack: <span id="human-cd-text" style="color: #00ff00; font-weight: bold;">READY</span></div>
-        </div>
-
-        <!-- Health HUD -->
-        <div id="health-hud" style="position: absolute; bottom: 20px; left: 20px; color: white; font-size: 1.2rem; text-shadow: 1px 1px 2px black; display: none; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; backdrop-filter: blur(2px);">
-            <div style="color: #ff5555; font-weight: bold; margin-bottom: 5px; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 1px;">Health</div>
-            <div class="speed-bar-container" style="width: 250px;">
-                <div id="health-bar" style="height: 100%; width: 100%; background: linear-gradient(90deg, #ff0000, #00ff00); transition: width 0.1s;"></div>
+            <div class="player-select">
+                <h2 class="p2-color" style="margin-bottom: 10px;">Player 2</h2>
+                <div id="p2-options"></div>
             </div>
         </div>
+        <button id="start-btn" onclick="startGame()" disabled>Select Characters</button>
+    </div>
 
-        <!-- Adult HUD -->
-        <div id="hud" style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; backdrop-filter: blur(2px);">
-            <div id="mode-text" style="color: #87CEEB; font-weight: bold; margin-bottom: 5px; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 1px;">FLYING</div>
-            <div>Speed: <span id="speed-text">50</span></div>
-            <div class="speed-bar-container">
-                <div id="speed-bar"></div>
+    <div id="game-wrapper">
+        <div id="ui-layer">
+            <!-- P1 Health -->
+            <div class="health-bar-container" style="float: left;">
+                <div id="player1-health"></div>
             </div>
-            <div style="margin-top: 10px; font-size: 1rem; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 5px;">Big Attack: <span id="dragon-cd-text" style="color: #00ff00; font-weight: bold;">READY</span></div>
+            
+            <!-- Timer -->
+            <div id="timer">60</div>
+
+            <!-- P2 Health -->
+            <div class="health-bar-container" style="float: right;">
+                <div id="player2-health"></div>
+            </div>
+
+            <!-- Game Over / Win Text -->
+            <div id="result">Player 1 Wins!</div>
         </div>
+        <canvas></canvas>
+    </div>
 
-        <!-- Baby HUD -->
-        <div id="growth-hud" style="position: absolute; top: 20px; left: 20px; color: white; font-size: 1.2rem; text-shadow: 1px 1px 2px black; display: none; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; backdrop-filter: blur(2px);">
-            <div style="color: #ffaa00; font-weight: bold; margin-bottom: 5px; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 1px;">Baby Dragon</div>
-            <div>Growth: <span id="growth-text">0</span>%</div>
-            <div class="speed-bar-container">
-                <div id="growth-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #4c9a2a, #ffaa00); transition: width 0.3s;"></div>
-            </div>
+    <div class="controls-info">
+        <div>
+            <h3 class="p1-color">Player 1 (Blue)</h3>
+            <p>Move: <b>A / D</b></p>
+            <p>Jump: <b>W</b></p>
+            <p>Punch: <b>Space</b></p>
+        </div>
+        <div>
+            <h3 class="p2-color">Player 2 (Red)</h3>
+            <p>Move: <b>Left / Right Arrows</b></p>
+            <p>Jump: <b>Up Arrow</b></p>
+            <p>Punch: <b>Enter / Numpad 0</b></p>
         </div>
     </div>
 
-    <!-- Load Three.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
     <script>
-        // Game Variables
-        let scene, camera, renderer;
-        let player; // The human player
-        let dragonModel; // The dragon 3D object
-        let wingL, wingR; // Dragon wings for animation
-        let isPlaying = false;
-        
-        // Flight mechanics
-        let speed = 100;
-        const minSpeed = 30;
-        const maxSpeed = 300;
-        let pitchRate = 0;
-        let yawRate = 0;
-        let rollAngle = 0;
+        const canvas = document.querySelector('canvas');
+        const c = canvas.getContext('2d');
 
-        // Growth state
-        let isAdult = false;
-        let isMounted = false;
-        let growth = 0;
-        const maxGrowth = 100;
-        const treats = [];
-        
-        // Resource state
-        let woodCount = 0;
-        let meatCount = 0;
-        let leatherCount = 0;
-        let playerHealth = 100;
-        const maxPlayerHealth = 100;
-        const HOUSE_COST = 5;
-        const trees = [];
-        const npcDragons = [];
-        const houses = [];
-        const workers = [];
-        const breedingPosts = [];
-        const raycaster = new THREE.Raycaster();
-        const screenCenter = new THREE.Vector2(0, 0);
+        // Internal resolution (Classic 16:9 2D Fighter ratio)
+        canvas.width = 1024;
+        canvas.height = 576;
 
-        // Input state
-        const keys = { w: false, s: false, space: false };
-        let isBreathingFire = false;
-        let isGrounded = false;
-        let verticalVelocity = 0;
+        const gravity = 0.7;
+        const groundHeight = 50;
 
-        // Cooldown state
-        let bigAttackCooldown = 0;
-        const BIG_ATTACK_MAX_COOLDOWN = 5.0; // 5 seconds
-
-        // Particles
-        const particles = [];
-        let particleGeometry, particleMaterial, particleSystem;
-
-        // HUD Elements
-        const startMenu = document.getElementById('start-menu');
-        const crosshair = document.getElementById('crosshair');
-        const hud = document.getElementById('hud');
-        const modeText = document.getElementById('mode-text');
-        const speedText = document.getElementById('speed-text');
-        const speedBar = document.getElementById('speed-bar');
-
-        window.onload = function() {
-            initGame();
+        // --- Character Data ---
+        const characters = {
+            balanced: { id: 'balanced', name: 'Balanced', color: '#3b82f6', hp: 100, atk: 10, speed: 6 },
+            heavy: { id: 'heavy', name: 'Heavy (Bruiser)', color: '#ef4444', hp: 150, atk: 15, speed: 4 },
+            speedster: { id: 'speedster', name: 'Speedster', color: '#10b981', hp: 70, atk: 8, speed: 9 },
+            striker: { id: 'striker', name: 'Striker', color: '#8b5cf6', hp: 60, atk: 25, speed: 7 }
         };
 
-        function initGame() {
-            // 1. Setup Scene
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x87CEEB); // Sky blue
-            scene.fog = new THREE.FogExp2(0x87CEEB, 0.0005); // Fog to blend horizon
+        let p1Choice = null;
+        let p2Choice = null;
+        let player;
+        let enemy;
+        let gameStarted = false;
 
-            // 2. Setup Camera
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
+        // --- Classes ---
+
+        class Fighter {
+            constructor({ position, velocity, stats, facingRight = true }) {
+                this.position = position;
+                this.velocity = velocity;
+                this.width = 50;
+                this.height = 150;
+                
+                // Assign stats based on selection
+                this.color = stats.color;
+                this.maxHealth = stats.hp;
+                this.health = stats.hp;
+                this.attackPower = stats.atk;
+                this.speed = stats.speed;
+
+                this.lastKey = '';
+                this.facingRight = facingRight;
+                
+                // Hit stun and knockback properties
+                this.hitStun = 0;
+                this.knockbackVelocity = 0;
+                
+                this.attackBox = {
+                    position: {
+                        x: this.position.x,
+                        y: this.position.y
+                    },
+                    width: 70, // Reach of the punch
+                    height: 25 // Thickness of the punch
+                };
+                
+                this.isAttacking = false;
+                this.health = 100;
+                this.dead = false;
+                this.colorFlash = null;
+            }
+
+            draw() {
+                // Flash white when taking damage
+                if (this.colorFlash) {
+                    c.fillStyle = this.colorFlash;
+                } else {
+                    c.fillStyle = this.color;
+                }
+                
+                // Draw character body
+                c.fillRect(this.position.x, this.position.y, this.width, this.height);
+
+                // Draw "Eye" / Visor to show which way they are looking
+                c.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                if (this.facingRight) {
+                    c.fillRect(this.position.x + 30, this.position.y + 10, 15, 10);
+                } else {
+                    c.fillRect(this.position.x + 5, this.position.y + 10, 15, 10);
+                }
+
+                // Draw extending "arm" when attacking
+                if (this.isAttacking) {
+                    c.fillStyle = this.color; // Arm matches body color
+                    if (this.facingRight) {
+                        c.fillRect(
+                            this.position.x + this.width, 
+                            this.position.y + 25, 
+                            this.attackBox.width, 
+                            this.attackBox.height
+                        );
+                    } else {
+                        c.fillRect(
+                            this.position.x - this.attackBox.width, 
+                            this.position.y + 25, 
+                            this.attackBox.width, 
+                            this.attackBox.height
+                        );
+                    }
+                }
+            }
+
+            update() {
+                this.draw();
+                
+                if (this.dead) return;
+
+                // Update attack box position to follow player and direction
+                if (this.facingRight) {
+                    this.attackBox.position.x = this.position.x + this.width;
+                    this.attackBox.position.y = this.position.y + 25; 
+                } else {
+                    this.attackBox.position.x = this.position.x - this.attackBox.width;
+                    this.attackBox.position.y = this.position.y + 25;
+                }
+
+                // Movement physics
+                this.position.x += this.velocity.x;
+                this.position.y += this.velocity.y;
+
+                // Screen boundaries (walls)
+                if (this.position.x <= 0) {
+                    this.position.x = 0;
+                } else if (this.position.x + this.width >= canvas.width) {
+                    this.position.x = canvas.width - this.width;
+                }
+
+                // Gravity & Floor collision
+                if (this.position.y + this.height + this.velocity.y >= canvas.height - groundHeight) {
+                    this.velocity.y = 0;
+                    this.position.y = canvas.height - groundHeight - this.height; // Snap to floor
+                } else {
+                    this.velocity.y += gravity; // Falling
+                }
+            }
+
+            attack() {
+                // Prevent attacking if currently stunned from being hit
+                if (this.hitStun > 0) return; 
+                
+                this.isAttacking = true;
+                setTimeout(() => {
+                    this.isAttacking = false;
+                }, 150); // Attack stays out for 150ms
+            }
             
-            // 3. Setup Renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
-            document.body.appendChild(renderer.domElement);
+            takeDamage(amount, directionMultiplier) {
+                this.health -= amount;
+                if (this.health <= 0) {
+                    this.health = 0;
+                    this.dead = true;
+                }
+                
+                // Apply knockback and hit stun
+                this.hitStun = 20; // 20 frames of being unable to move
+                this.knockbackVelocity = 6 * directionMultiplier; // Push back speed
+                this.velocity.y = -8; // Small pop-up into the air
+                
+                // Visual flash effect
+                this.colorFlash = 'white';
+                setTimeout(() => {
+                    this.colorFlash = null;
+                }, 100);
+            }
+        }
 
-            // 4. Lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambientLight);
+        // --- Game Setup ---
 
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            directionalLight.position.set(1000, 2000, 1000);
-            directionalLight.castShadow = false; // Disable shadows for performance
-            scene.add(directionalLight);
+        const keys = {
+            a: { pressed: false },
+            d: { pressed: false },
+            w: { pressed: false },
+            ArrowRight: { pressed: false },
+            ArrowLeft: { pressed: false },
+            ArrowUp: { pressed: false }
+        };
 
-            // 5. Generate Environment & Treats & Trees & NPCs
-            createTerrain();
-            spawnTreats();
-            spawnTrees();
-            spawnNPCDragons();
+        // --- UI & Selection Logic ---
 
-            // 6. Setup Player (Human) and Dragon Model
-            // Human Player Setup
-            player = new THREE.Group();
-            scene.add(player);
-            player.add(camera);
-            const startY = getTerrainHeight(0, 0);
-            player.position.set(0, startY + 10, 0);
-            isGrounded = true;
+        function createSelectScreen() {
+            const p1Container = document.getElementById('p1-options');
+            const p2Container = document.getElementById('p2-options');
 
-            // Dragon Model Setup
-            dragonModel = new THREE.Group();
-            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x8b0000, roughness: 0.7 });
+            Object.values(characters).forEach(char => {
+                // P1 Button
+                const btn1 = document.createElement('button');
+                btn1.className = 'char-btn';
+                btn1.innerHTML = `<span style="color:${char.color}; font-size:1.2rem;">${char.name}</span><span class="stat-text">HP: ${char.hp} | ATK: ${char.atk} | SPD: ${char.speed}</span>`;
+                btn1.onclick = () => selectChar(1, char, btn1);
+                p1Container.appendChild(btn1);
+
+                // P2 Button
+                const btn2 = document.createElement('button');
+                btn2.className = 'char-btn';
+                btn2.innerHTML = `<span style="color:${char.color}; font-size:1.2rem;">${char.name}</span><span class="stat-text">HP: ${char.hp} | ATK: ${char.atk} | SPD: ${char.speed}</span>`;
+                btn2.onclick = () => selectChar(2, char, btn2);
+                p2Container.appendChild(btn2);
+            });
+        }
+
+        function selectChar(playerNum, char, btnElement) {
+            if (playerNum === 1) {
+                p1Choice = char;
+                document.querySelectorAll('#p1-options .char-btn').forEach(b => b.classList.remove('p1-active'));
+                btnElement.classList.add('p1-active');
+            } else {
+                p2Choice = char;
+                document.querySelectorAll('#p2-options .char-btn').forEach(b => b.classList.remove('p2-active'));
+                btnElement.classList.add('p2-active');
+            }
+
+            if (p1Choice && p2Choice) {
+                const startBtn = document.getElementById('start-btn');
+                startBtn.disabled = false;
+                startBtn.innerText = "START FIGHT!";
+            }
+        }
+
+        function startGame() {
+            document.getElementById('character-select').style.display = 'none';
+            gameStarted = true;
+
+            // Initialize fighters with chosen stats
+            player = new Fighter({
+                position: { x: 200, y: 0 },
+                velocity: { x: 0, y: 0 },
+                stats: p1Choice,
+                facingRight: true
+            });
+
+            enemy = new Fighter({
+                position: { x: 774, y: 0 },
+                velocity: { x: 0, y: 0 },
+                stats: p2Choice,
+                facingRight: false
+            });
+
+            // Reset UI Health bars to visually match character choices
+            document.querySelector('#player1-health').style.width = '100%';
+            document.querySelector('#player2-health').style.width = '100%';
+            document.querySelector('#player1-health').style.backgroundColor = p1Choice.color;
+            document.querySelector('#player2-health').style.backgroundColor = p2Choice.color;
             
-            // Body
-            const body = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 6), bodyMat);
-            dragonModel.add(body);
-            
-            // Head
-            const head = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.5, 2.5), bodyMat);
-            head.position.set(0, 1.5, -4);
-            dragonModel.add(head);
-
-            // Wings
-            const wingGeo = new THREE.BoxGeometry(8, 0.2, 3);
-            wingL = new THREE.Mesh(wingGeo, bodyMat);
-            wingL.position.set(-4, 1, 0);
-            dragonModel.add(wingL);
-            
-            wingR = new THREE.Mesh(wingGeo, bodyMat);
-            wingR.position.set(4, 1, 0);
-            dragonModel.add(wingR);
-
-            scene.add(dragonModel);
-            // Spawn dragon slightly behind player
-            dragonModel.position.set(0, startY + 2, 10);
-
-            // 7. Setup Fire Particle System
-            setupFireParticles();
-
-            // 8. Event Listeners
-            setupEventListeners();
-
-            // Start loop
+            resultUI.style.display = 'none';
+            timer = 60;
+            decreaseTimer();
             animate();
         }
 
-        function getTerrainHeight(x, z) {
-            let y = Math.sin(x * 0.001) * 300 
-                  + Math.cos(z * 0.001) * 300 
-                  + Math.sin((x + z) * 0.003) * 100
-                  + Math.cos((x - z) * 0.008) * 50;
+        createSelectScreen();
+
+        // --- Timer and Win Logic ---
+
+        let timer = 60;
+        let timerId;
+        const resultUI = document.querySelector('#result');
+
+        function determineWinner() {
+            clearTimeout(timerId);
+            resultUI.style.display = 'block';
             
-            // Create a central valley so player spawns safely
-            const distFromCenter = Math.sqrt(x*x + z*z);
-            if (distFromCenter < 2000) {
-                y *= (distFromCenter / 2000);
-            }
-
-            return Math.max(0, y);
-        }
-
-        function createTerrain() {
-            // Large plane for the world
-            const size = 20000;
-            const segments = 200;
-            const geometry = new THREE.PlaneGeometry(size, size, segments, segments);
-            geometry.rotateX(-Math.PI / 2); // Lay flat
-
-            // Displace vertices to create mountains and valleys
-            const positions = geometry.attributes.position.array;
-            const colors = [];
-            const colorObj = new THREE.Color();
-
-            for (let i = 0; i < positions.length; i += 3) {
-                const x = positions[i];
-                const z = positions[i + 2];
-                
-                let y = getTerrainHeight(x, z);
-                positions[i + 1] = y;
-
-                // Vertex Coloring based on height
-                if (y < 20) {
-                    colorObj.setHex(0x2b65ec); // Water/Lowlands
-                } else if (y < 250) {
-                    colorObj.setHex(0x4c9a2a); // Grass/Forest
-                } else if (y < 500) {
-                    colorObj.setHex(0x6e6e6e); // Rock
-                } else {
-                    colorObj.setHex(0xffffff); // Snow
-                }
-                
-                colors.push(colorObj.r, colorObj.g, colorObj.b);
-            }
-
-            // Update normals for lighting
-            geometry.computeVertexNormals();
-            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-
-            const material = new THREE.MeshStandardMaterial({ 
-                vertexColors: true, 
-                flatShading: true,
-                roughness: 0.8
-            });
-
-            const terrain = new THREE.Mesh(geometry, material);
-            scene.add(terrain);
-        }
-
-        function spawnTreats() {
-            const treatGeo = new THREE.DodecahedronGeometry(3);
-            const treatMat = new THREE.MeshStandardMaterial({ 
-                color: 0xffff00, 
-                emissive: 0xffaa00,
-                emissiveIntensity: 0.5
-            });
-
-            // Scatter 20 treats randomly in the starting valley
-            for (let i = 0; i < 20; i++) {
-                const treat = new THREE.Mesh(treatGeo, treatMat);
-                
-                // Random position within 600 units, but not too close to center
-                const angle = Math.random() * Math.PI * 2;
-                const radius = Math.random() * 500 + 50; 
-                const x = Math.cos(angle) * radius;
-                const z = Math.sin(angle) * radius;
-                
-                const y = getTerrainHeight(x, z) + 4; // Float slightly above ground
-                treat.position.set(x, y, z);
-                
-                scene.add(treat);
-                treats.push({ mesh: treat, active: true });
-            }
-        }
-
-        function spawnTrees() {
-            const trunkGeo = new THREE.CylinderGeometry(1.5, 2, 8, 5);
-            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3018, roughness: 0.9, flatShading: true });
-            const leavesGeo = new THREE.ConeGeometry(8, 25, 5);
-            const leavesMat = new THREE.MeshStandardMaterial({ color: 0x2d8a2d, roughness: 0.8, flatShading: true });
-
-            // Scatter 400 trees across the grassy areas
-            for (let i = 0; i < 400; i++) {
-                const treeGroup = new THREE.Group();
-                treeGroup.userData.isTree = true;
-                
-                const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-                trunk.position.y = 4;
-                treeGroup.add(trunk);
-                
-                const leaves = new THREE.Mesh(leavesGeo, leavesMat);
-                leaves.position.y = 16;
-                treeGroup.add(leaves);
-
-                const angle = Math.random() * Math.PI * 2;
-                const radius = Math.random() * 8000 + 200; 
-                const x = Math.cos(angle) * radius;
-                const z = Math.sin(angle) * radius;
-                
-                const y = getTerrainHeight(x, z);
-                
-                // Only place trees on the grass elevation tier (y between 20 and 250)
-                if (y > 20 && y < 250) {
-                    treeGroup.position.set(x, y, z);
-                    
-                    // Slightly randomize rotation and scale for variety
-                    treeGroup.rotation.y = Math.random() * Math.PI;
-                    const scale = 0.8 + Math.random() * 0.6;
-                    treeGroup.scale.set(scale, scale, scale);
-
-                    scene.add(treeGroup);
-                    trees.push(treeGroup);
-                }
-            }
-        }
-
-        function spawnNPCDragons() {
-            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.7 }); // Neutral grey
+            // Calculate health percentages so fighters with different max HP can be compared fairly at timeout
+            const p1Percent = player.health / player.maxHealth;
+            const p2Percent = enemy.health / enemy.maxHealth;
             
-            for (let i = 0; i < 15; i++) {
-                const npcGroup = new THREE.Group();
-                npcGroup.userData = { isNPC: true, health: 100, state: 'idle' }; // states: idle, hostile, friendly
-
-                // Body
-                const body = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 6), bodyMat.clone());
-                npcGroup.add(body);
-                
-                // Head
-                const head = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.5, 2.5), bodyMat.clone());
-                head.position.set(0, 1.5, -4);
-                npcGroup.add(head);
-
-                // Wings
-                const wingGeo = new THREE.BoxGeometry(8, 0.2, 3);
-                const wingL = new THREE.Mesh(wingGeo, bodyMat.clone());
-                wingL.position.set(-4, 1, 0);
-                npcGroup.add(wingL);
-                
-                const wingR = new THREE.Mesh(wingGeo, bodyMat.clone());
-                wingR.position.set(4, 1, 0);
-                npcGroup.add(wingR);
-
-                npcGroup.userData.meshes = [body, head, wingL, wingR];
-                npcGroup.userData.wingL = wingL;
-                npcGroup.userData.wingR = wingR;
-                npcGroup.userData.timeOffset = Math.random() * 100;
-
-                // Position randomly
-                const angle = Math.random() * Math.PI * 2;
-                const radius = Math.random() * 4000 + 200; 
-                const x = Math.cos(angle) * radius;
-                const z = Math.sin(angle) * radius;
-                
-                const y = getTerrainHeight(x, z);
-                npcGroup.position.set(x, y + 3, z); // Adult size height
-                npcGroup.scale.set(3, 3, 3);
-                
-                scene.add(npcGroup);
-                npcDragons.push(npcGroup);
+            if (p1Percent === p2Percent) {
+                resultUI.innerHTML = 'TIE';
+                resultUI.style.color = 'white';
+            } else if (p1Percent > p2Percent) {
+                resultUI.innerHTML = 'PLAYER 1 WINS';
+                resultUI.style.color = p1Choice.color;
+            } else {
+                resultUI.innerHTML = 'PLAYER 2 WINS';
+                resultUI.style.color = p2Choice.color;
             }
         }
 
-        function showActionMessage(msg, color = '#ffaa00') {
-            const msgEl = document.getElementById('action-msg');
-            msgEl.innerText = msg;
-            msgEl.style.color = color;
-            msgEl.style.display = 'block';
-            setTimeout(() => { msgEl.style.display = 'none'; }, 2000);
-        }
-
-        function setupFireParticles() {
-            const particleCount = 500;
-            const geometry = new THREE.BufferGeometry();
-            const positions = new Float32Array(particleCount * 3);
-            const sizes = new Float32Array(particleCount);
-            
-            for (let i = 0; i < particleCount; i++) {
-                positions[i * 3] = 0;
-                positions[i * 3 + 1] = 0;
-                positions[i * 3 + 2] = 0;
-                sizes[i] = Math.random() * 5 + 2;
-                
-                // Custom particle data
-                particles.push({
-                    active: false,
-                    life: 0,
-                    velocity: new THREE.Vector3()
-                });
+        function decreaseTimer() {
+            if (timer > 0 && gameStarted) {
+                timerId = setTimeout(decreaseTimer, 1000);
+                timer--;
+                document.querySelector('#timer').innerHTML = timer;
             }
 
-            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-
-            // Create a simple circular texture programmatically
-            const canvas = document.createElement('canvas');
-            canvas.width = 32;
-            canvas.height = 32;
-            const context = canvas.getContext('2d');
-            const gradient = context.createRadialGradient(16, 16, 0, 16, 16, 16);
-            gradient.addColorStop(0, 'rgba(255,255,255,1)');
-            gradient.addColorStop(0.2, 'rgba(255,200,0,1)');
-            gradient.addColorStop(0.4, 'rgba(255,50,0,0.8)');
-            gradient.addColorStop(1, 'rgba(0,0,0,0)');
-            context.fillStyle = gradient;
-            context.fillRect(0, 0, 32, 32);
-            const texture = new THREE.CanvasTexture(canvas);
-
-            particleMaterial = new THREE.PointsMaterial({
-                size: 60, // Increased fire size for the bigger dragon
-                map: texture,
-                transparent: true,
-                blending: THREE.AdditiveBlending,
-                depthWrite: false,
-                color: 0xffaaaa
-            });
-
-            particleSystem = new THREE.Points(geometry, particleMaterial);
-            // We'll manage position globally so we don't add it to the camera
-            scene.add(particleSystem);
+            if (timer === 0) {
+                determineWinner();
+            }
         }
 
-        function setupEventListeners() {
-            const startBtn = document.getElementById('start-btn');
-            
-            startBtn.addEventListener('click', () => {
-                document.body.requestPointerLock();
-            });
+        // --- Collision Detection ---
 
-            document.addEventListener('pointerlockchange', () => {
-                if (document.pointerLockElement === document.body) {
-                    isPlaying = true;
-                    startMenu.style.display = 'none';
-                    crosshair.style.display = 'block';
-                    document.getElementById('health-hud').style.display = 'block';
-                    if (isAdult && isMounted) {
-                        hud.style.display = 'block';
-                        document.getElementById('human-hud').style.display = 'none';
-                    } else {
-                        document.getElementById('human-hud').style.display = 'block';
-                        if (!isAdult) {
-                            document.getElementById('growth-hud').style.display = 'block';
-                        }
-                    }
-                } else {
-                    isPlaying = false;
-                    startMenu.style.display = 'block';
-                    crosshair.style.display = 'none';
-                    hud.style.display = 'none';
-                    document.getElementById('growth-hud').style.display = 'none';
-                    document.getElementById('human-hud').style.display = 'none';
-                    document.getElementById('health-hud').style.display = 'none';
-                    document.getElementById('interact-prompt').style.display = 'none';
-                }
-            });
-
-            document.addEventListener('mousemove', (e) => {
-                if (!isPlaying) return;
-                
-                // Sensitivity
-                const sensitivity = 0.0015;
-                yawRate -= e.movementX * sensitivity;
-                pitchRate -= e.movementY * sensitivity;
-                
-                // Cap rotation rates
-                yawRate = Math.max(-0.05, Math.min(0.05, yawRate));
-                pitchRate = Math.max(-0.05, Math.min(0.05, pitchRate));
-            });
-
-            document.addEventListener('keydown', (e) => {
-                if (e.key.toLowerCase() === 'w') keys.w = true;
-                if (e.key.toLowerCase() === 's') keys.s = true;
-                if (e.code === 'Space') keys.space = true;
-                if (e.key.toLowerCase() === 'b' && !isMounted && isPlaying) {
-                    if (woodCount >= HOUSE_COST) {
-                        woodCount -= HOUSE_COST;
-                        buildHouse('normal');
-                    } else {
-                        showActionMessage("Need 5 Wood to Build!", "#ff5555");
-                    }
-                }
-                if (e.key.toLowerCase() === 'h' && !isMounted && isPlaying) {
-                    if (woodCount >= 10) {
-                        woodCount -= 10;
-                        buildHouse('big');
-                    } else {
-                        showActionMessage("Need 10 Wood for Big House!", "#ff5555");
-                    }
-                }
-                if (e.key.toLowerCase() === 'n' && !isMounted && isPlaying) {
-                    if (woodCount >= 10 && leatherCount >= 5 && meatCount >= 15) {
-                        raycaster.setFromCamera(screenCenter, camera);
-                        const treeIntersects = raycaster.intersectObjects(trees, true);
-                        if (treeIntersects.length > 0 && treeIntersects[0].distance < 40) {
-                            let obj = treeIntersects[0].object;
-                            while(obj.parent && !obj.userData.isTree) {
-                                obj = obj.parent;
-                                if (obj === scene) break;
-                            }
-                            if (obj.userData && obj.userData.isTree) {
-                                woodCount -= 10;
-                                leatherCount -= 5;
-                                meatCount -= 15;
-                                buildBreedingPost(treeIntersects[0].point);
-                            }
-                        } else {
-                            showActionMessage("Look at a tree to build!", "#ff5555");
-                        }
-                    } else {
-                        showActionMessage("Need 10 Wood, 5 Leather, 15 Meat!", "#ff5555");
-                    }
-                }
-                if (e.key.toLowerCase() === 'f' && !isMounted && isPlaying) {
-                    // Try to befriend nearby NPC dragon
-                    let closestNPC = null;
-                    let minDistance = 50;
-                    npcDragons.forEach(npc => {
-                        const dist = npc.position.distanceTo(player.position);
-                        if (dist < minDistance && npc.userData.state !== 'hostile') {
-                            minDistance = dist;
-                            closestNPC = npc;
-                        }
-                    });
-
-                    if (closestNPC) {
-                        closestNPC.userData.state = 'friendly';
-                        closestNPC.userData.hasRider = false; // Initialize for workers
-                        closestNPC.userData.meshes.forEach(m => m.material.color.setHex(0x4c9a2a)); // Turn green
-                        showActionMessage("Made a Dragon Friend!", "#4c9a2a");
-                    }
-                }
-                if (e.key.toLowerCase() === 'e') {
-                    if (isAdult && isPlaying) {
-                        if (isMounted && isGrounded) {
-                            dismountDragon();
-                        } else if (!isMounted && player.position.distanceTo(dragonModel.position) < 35) { // Increased mount distance
-                            mountDragon();
-                        }
-                    }
-                }
-            });
-
-            document.addEventListener('keyup', (e) => {
-                if (e.key.toLowerCase() === 'w') keys.w = false;
-                if (e.key.toLowerCase() === 's') keys.s = false;
-                if (e.code === 'Space') keys.space = false;
-            });
-
-            document.addEventListener('mousedown', (e) => {
-                if (!isPlaying) return;
-                
-                if (e.button === 0) {
-                    if (isMounted) {
-                        // Breathe fire only when riding dragon
-                        isBreathingFire = true;
-                    } else {
-                        // Human Attack / Chop
-                        raycaster.setFromCamera(screenCenter, camera);
-                        
-                        // Check Trees
-                        const treeIntersects = raycaster.intersectObjects(trees, true);
-                        if (treeIntersects.length > 0 && treeIntersects[0].distance < 30) {
-                            let obj = treeIntersects[0].object;
-                            while(obj.parent && !obj.userData.isTree) {
-                                obj = obj.parent;
-                                if (obj === scene) break;
-                            }
-                            if (obj.userData && obj.userData.isTree) {
-                                scene.remove(obj);
-                                const index = trees.indexOf(obj);
-                                if (index > -1) trees.splice(index, 1);
-                                woodCount += 1;
-                                showActionMessage("+1 Wood");
-                                return; // Stop checking after hitting tree
-                            }
-                        }
-
-                        // Check NPC Dragons (Human Punch)
-                        const npcIntersects = raycaster.intersectObjects(npcDragons, true);
-                        if (npcIntersects.length > 0 && npcIntersects[0].distance < 40) {
-                            let npc = npcIntersects[0].object.parent;
-                            if (npc.userData.isNPC) {
-                                damageNPC(npc, 35); // 3 hits to kill
-                            }
-                        }
-                    }
-                } else if (e.button === 2) {
-                    // Right Click - Big Attack
-                    if (bigAttackCooldown > 0) {
-                        showActionMessage("Cooldown: " + Math.ceil(bigAttackCooldown) + "s", "#ff5555");
-                        return;
-                    }
-
-                    if (isMounted) {
-                        triggerBigDragonAttack();
-                    } else {
-                        triggerBigHumanAttack();
-                    }
-                    
-                    bigAttackCooldown = BIG_ATTACK_MAX_COOLDOWN;
-                }
-            });
-
-            document.addEventListener('mouseup', (e) => {
-                if (e.button === 0) isBreathingFire = false;
-            });
-
-            // Prevent right-click menu from popping up in-game
-            document.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-            });
-
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            });
+        function rectangularCollision({ rect1, rect2 }) {
+            return (
+                rect1.attackBox.position.x + rect1.attackBox.width >= rect2.position.x &&
+                rect1.attackBox.position.x <= rect2.position.x + rect2.width &&
+                rect1.attackBox.position.y + rect1.attackBox.height >= rect2.position.y &&
+                rect1.attackBox.position.y <= rect2.position.y + rect2.height
+            );
         }
 
-        const clock = new THREE.Clock();
+        // --- Game Loop ---
 
         function animate() {
-            requestAnimationFrame(animate);
+            if (!gameStarted) return;
+            window.requestAnimationFrame(animate);
 
-            const delta = clock.getDelta();
-
-            if (isPlaying) {
-                if (bigAttackCooldown > 0) {
-                    bigAttackCooldown -= delta;
-                    if (bigAttackCooldown < 0) bigAttackCooldown = 0;
-                }
-
-                updateTreats(delta);
-                updateFlight(delta);
-                updateNPCDragons(delta);
-                updateWorkers(delta);
-                updateBreedingPosts(delta);
-                updateParticles(delta);
-                updateHUD();
+            // Clear frame and draw background
+            c.fillStyle = '#222'; // Sky
+            c.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw floor/stage
+            c.fillStyle = '#444';
+            c.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
+            
+            // Draw grid lines on background for retro feel
+            c.strokeStyle = '#333';
+            c.lineWidth = 2;
+            for(let i=0; i<canvas.width; i+=50) {
+                c.beginPath(); c.moveTo(i, 0); c.lineTo(i, canvas.height); c.stroke();
+            }
+            for(let i=0; i<canvas.height; i+=50) {
+                c.beginPath(); c.moveTo(0, i); c.lineTo(canvas.width, i); c.stroke();
             }
 
-            renderer.render(scene, camera);
-        }
+            // Update entities
+            player.update();
+            enemy.update();
 
-        function buildHouse(type) {
-            // House Group
-            const houseGroup = new THREE.Group();
-            
-            let baseGeo, roofGeo, roofY;
-            
-            if (type === 'big') {
-                baseGeo = new THREE.BoxGeometry(16, 15, 16);
-                roofGeo = new THREE.ConeGeometry(13, 10, 4);
-                roofY = 19;
+            // Stop movement logic if game is over
+            if (player.dead || enemy.dead || timer === 0) {
+                if(!resultUI.style.display || resultUI.style.display === 'none') {
+                    determineWinner();
+                }
+                return;
+            }
+
+            // --- Player 1 Movement & Hit Stun ---
+            if (player.hitStun > 0) {
+                player.velocity.x = player.knockbackVelocity; // Get pushed back
+                player.hitStun--;
             } else {
-                baseGeo = new THREE.BoxGeometry(12, 10, 12);
-                roofGeo = new THREE.ConeGeometry(10, 8, 4);
-                roofY = 14;
+                player.velocity.x = 0; // Default to not moving laterally
+                if (keys.a.pressed && player.lastKey === 'a') {
+                    player.velocity.x = -player.speed;
+                    player.facingRight = false;
+                } else if (keys.d.pressed && player.lastKey === 'd') {
+                    player.velocity.x = player.speed;
+                    player.facingRight = true;
+                }
             }
-            
-            // Base
-            const baseMat = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.9 }); // Brown wood
-            const base = new THREE.Mesh(baseGeo, baseMat);
-            base.position.y = type === 'big' ? 7.5 : 5;
-            houseGroup.add(base);
-            
-            // Roof
-            const roofMat = new THREE.MeshStandardMaterial({ color: 0xAA0000, roughness: 0.8 }); // Red roof
-            const roof = new THREE.Mesh(roofGeo, roofMat);
-            roof.position.y = roofY;
-            roof.rotation.y = Math.PI / 4;
-            houseGroup.add(roof);
-            
-            // Position in front of player
-            const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(player.quaternion);
-            const spawnPos = player.position.clone().add(forward.multiplyScalar(30));
-            spawnPos.y = getTerrainHeight(spawnPos.x, spawnPos.z);
-            
-            houseGroup.position.copy(spawnPos);
-            
-            // Rotate house to face player
-            houseGroup.lookAt(player.position.x, houseGroup.position.y, player.position.z);
-            
-            scene.add(houseGroup);
-            houses.push(houseGroup);
-            
-            if (type === 'big') {
-                showActionMessage("Big House Built!", "#ffaa00");
-                spawnNPC(spawnPos, 'hunter');
+
+            // --- Player 2 Movement & Hit Stun ---
+            if (enemy.hitStun > 0) {
+                enemy.velocity.x = enemy.knockbackVelocity; // Get pushed back
+                enemy.hitStun--;
             } else {
-                showActionMessage("House Built!", "#00ffff");
-                spawnNPC(spawnPos, 'worker');
+                enemy.velocity.x = 0; // Default to not moving laterally
+                if (keys.ArrowLeft.pressed && enemy.lastKey === 'ArrowLeft') {
+                    enemy.velocity.x = -enemy.speed;
+                    enemy.facingRight = false;
+                } else if (keys.ArrowRight.pressed && enemy.lastKey === 'ArrowRight') {
+                    enemy.velocity.x = enemy.speed;
+                    enemy.facingRight = true;
+                }
             }
-        }
 
-        function spawnNPC(homePos, role) {
-            const workerGroup = new THREE.Group();
-            
-            // Body
-            const bodyGeo = new THREE.CylinderGeometry(1.5, 1.5, 4, 8);
-            const bodyColor = role === 'hunter' ? 0xcc0000 : 0x0055ff; // Red for hunter, Blue for worker
-            const bodyMat = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.8 }); 
-            const body = new THREE.Mesh(bodyGeo, bodyMat);
-            body.position.y = 2;
-            workerGroup.add(body);
-            
-            // Head
-            const headGeo = new THREE.BoxGeometry(2.5, 2.5, 2.5);
-            const headMat = new THREE.MeshStandardMaterial({ color: 0xFFDAB9, roughness: 0.6 }); // Skin
-            const head = new THREE.Mesh(headGeo, headMat);
-            head.position.y = 5.25;
-            workerGroup.add(head);
-            
-            workerGroup.position.set(homePos.x + 15, homePos.y, homePos.z);
-            
-            workerGroup.userData = {
-                home: homePos,
-                target: homePos.clone(),
-                timer: 0,
-                state: 'wandering',
-                mountedDragon: null,
-                role: role
-            };
-            
-            scene.add(workerGroup);
-            workers.push(workerGroup);
-        }
+            // Auto-face logic: if standing still and not stunned, players face each other
+            if (player.velocity.x === 0 && enemy.velocity.x === 0 && player.hitStun === 0 && enemy.hitStun === 0) {
+                 player.facingRight = player.position.x < enemy.position.x;
+                 enemy.facingRight = enemy.position.x < player.position.x;
+            }
 
-        function buildBreedingPost(pos) {
-            const nestGroup = new THREE.Group();
+            // --- Collision Checks ---
             
-            // Platform
-            const platGeo = new THREE.BoxGeometry(6, 1, 6);
-            const platMat = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.9 });
-            const platform = new THREE.Mesh(platGeo, platMat);
-            nestGroup.add(platform);
-            
-            // Egg (visual indicator)
-            const eggGeo = new THREE.DodecahedronGeometry(1.5, 1);
-            const eggMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.5 });
-            const egg = new THREE.Mesh(eggGeo, eggMat);
-            egg.position.y = 1.5;
-            nestGroup.add(egg);
-            
-            nestGroup.position.copy(pos);
-            scene.add(nestGroup);
-            
-            breedingPosts.push({
-                mesh: nestGroup,
-                timer: 300 // 5 minutes
-            });
-            showActionMessage("Breeding Post Built!", "#ffaa00");
-        }
-
-        function updateBreedingPosts(delta) {
-            breedingPosts.forEach(post => {
-                post.timer -= delta;
+            // Player attacks Enemy
+            if (
+                rectangularCollision({ rect1: player, rect2: enemy }) &&
+                player.isAttacking &&
+                !enemy.dead &&
+                enemy.hitStun === 0 // Don't hit them again if they are already flying back
+            ) {
+                player.isAttacking = false; // hit lands only once per attack
+                let direction = player.position.x < enemy.position.x ? 1 : -1; // Push right or left
                 
-                // Add a small bouncing animation to the egg to show it's active
-                if (post.mesh.children.length > 1) {
-                    post.mesh.children[1].position.y = 1.5 + Math.sin(clock.elapsedTime * 2) * 0.2;
-                }
+                // Deal damage based on player's Attack stat
+                enemy.takeDamage(player.attackPower, direction);
                 
-                if (post.timer <= 0) {
-                    post.timer = 300; // Reset for next dragon
-                    spawnFriendlyDragon(post.mesh.position);
-                    showActionMessage("A new Dragon hatched!", "#4c9a2a");
-                }
-            });
-        }
+                // Update Health bar percentage width
+                document.querySelector('#player2-health').style.width = Math.max(0, (enemy.health / enemy.maxHealth) * 100) + '%';
+            }
 
-        function spawnFriendlyDragon(pos) {
-            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x4c9a2a, roughness: 0.7 }); // Friendly green
-            
-            const npcGroup = new THREE.Group();
-            npcGroup.userData = { isNPC: true, health: 100, state: 'friendly', hasRider: false };
-
-            // Body
-            const body = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 6), bodyMat.clone());
-            npcGroup.add(body);
-            
-            // Head
-            const head = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.5, 2.5), bodyMat.clone());
-            head.position.set(0, 1.5, -4);
-            npcGroup.add(head);
-
-            // Wings
-            const wingGeo = new THREE.BoxGeometry(8, 0.2, 3);
-            const wingL = new THREE.Mesh(wingGeo, bodyMat.clone());
-            wingL.position.set(-4, 1, 0);
-            npcGroup.add(wingL);
-            
-            const wingR = new THREE.Mesh(wingGeo, bodyMat.clone());
-            wingR.position.set(4, 1, 0);
-            npcGroup.add(wingR);
-
-            npcGroup.userData.meshes = [body, head, wingL, wingR];
-            npcGroup.userData.wingL = wingL;
-            npcGroup.userData.wingR = wingR;
-            npcGroup.userData.timeOffset = Math.random() * 100;
-
-            // Spawn at ground level near the post
-            const groundY = getTerrainHeight(pos.x, pos.z);
-            npcGroup.position.set(pos.x + 10, groundY + 3, pos.z + 10);
-            npcGroup.scale.set(3, 3, 3);
-            
-            scene.add(npcGroup);
-            npcDragons.push(npcGroup);
-        }
-
-        function updateWorkers(delta) {
-            workers.forEach(worker => {
-                if (worker.userData.mountedDragon) {
-                    // If riding, the dragon controls movement and logic
-                    return; 
-                }
-
-                if (worker.userData.role === 'hunter') {
-                    // Look for an available friendly dragon to mount
-                    let nearestFriendly = null;
-                    let minDist = 300; // Search radius for mounts
-                    npcDragons.forEach(dragon => {
-                        if (dragon.userData.state === 'friendly' && !dragon.userData.hasRider && worker.position.distanceTo(dragon.position) < minDist) {
-                            minDist = worker.position.distanceTo(dragon.position);
-                            nearestFriendly = dragon;
-                        }
-                    });
-
-                    if (nearestFriendly) {
-                        // Move to dragon to mount it
-                        const targetLevel = nearestFriendly.position.clone();
-                        targetLevel.y = worker.position.y;
-                        worker.lookAt(targetLevel);
-                        worker.translateZ(25 * delta); // Run towards mount
-                        
-                        const groundY = getTerrainHeight(worker.position.x, worker.position.z);
-                        worker.position.y = groundY + Math.abs(Math.sin(clock.elapsedTime * 15)) * 0.8;
-
-                        if (worker.position.distanceTo(nearestFriendly.position) < 15) {
-                            // Mount the dragon
-                            worker.userData.mountedDragon = nearestFriendly;
-                            nearestFriendly.userData.hasRider = true;
-                            
-                            nearestFriendly.add(worker);
-                            worker.position.set(0, 4, 1); // Sit on the dragon's back
-                            worker.rotation.set(0, 0, 0); 
-                            showActionMessage("Hunter mounted a Dragon!", "#ffaa00");
-                        }
-                        return; // Skip wandering logic while moving to mount
-                    }
-                }
-
-                if (worker.userData.role === 'worker') {
-                    // Generate Wood Automatically
-                    worker.userData.timer += delta;
-                    if (worker.userData.timer >= 10) { // Every 10 seconds
-                        worker.userData.timer = 0;
-                        woodCount++;
-                        showActionMessage("+1 Wood (Worker)", "#4c9a2a");
-                    }
-                }
+            // Enemy attacks Player
+            if (
+                rectangularCollision({ rect1: enemy, rect2: player }) &&
+                enemy.isAttacking &&
+                !player.dead &&
+                player.hitStun === 0
+            ) {
+                enemy.isAttacking = false;
+                let direction = enemy.position.x < player.position.x ? 1 : -1;
                 
-                // Wander Logic (For workers, or hunters who haven't found a dragon yet)
-                const dist = worker.position.distanceTo(worker.userData.target);
-                if (dist < 2) {
-                    // Pick new target near home
-                    const angle = Math.random() * Math.PI * 2;
-                    const radius = Math.random() * 30 + 10;
-                    worker.userData.target.set(
-                        worker.userData.home.x + Math.cos(angle) * radius,
-                        0,
-                        worker.userData.home.z + Math.sin(angle) * radius
-                    );
-                    worker.userData.target.y = getTerrainHeight(worker.userData.target.x, worker.userData.target.z);
-                } else {
-                    // Move towards target
-                    const targetLevel = worker.userData.target.clone();
-                    targetLevel.y = worker.position.y;
-                    worker.lookAt(targetLevel);
-                    worker.translateZ(15 * delta); // Walk speed
-                    
-                    // Stick to ground with slight bobbing
-                    const groundY = getTerrainHeight(worker.position.x, worker.position.z);
-                    worker.position.y = groundY + Math.abs(Math.sin(clock.elapsedTime * 10)) * 0.5;
-                }
-            });
-        }
-
-        function takeDamage(amount) {
-            playerHealth -= amount;
-            if (playerHealth <= 0) {
-                respawn();
-            }
-        }
-
-        function respawn() {
-            playerHealth = maxPlayerHealth;
-            if (isMounted) dismountDragon();
-            
-            const startY = getTerrainHeight(0, 0);
-            player.position.set(0, startY + 10, 0);
-            if (dragonModel) {
-                dragonModel.position.set(0, startY + 2, 10);
-            }
-            
-            // Turn hostile NPCs back to idle so they don't spawn trap you
-            npcDragons.forEach(npc => {
-                if (npc.userData.state === 'hostile') {
-                    npc.userData.state = 'idle';
-                    npc.userData.meshes.forEach(m => m.material.color.setHex(0x666666));
-                }
-            });
-
-            showActionMessage("Knocked Out! Respawned.", "#ff5555");
-        }
-
-        function damageNPC(npc, amount) {
-            npc.userData.health -= amount;
-            
-            if (npc.userData.health <= 0) {
-                // Defeated!
-                scene.remove(npc);
-                const index = npcDragons.indexOf(npc);
-                if (index > -1) npcDragons.splice(index, 1);
+                // Deal damage based on enemy's Attack stat
+                player.takeDamage(enemy.attackPower, direction);
                 
-                meatCount += Math.floor(Math.random() * 3) + 1;
-                leatherCount += Math.floor(Math.random() * 2) + 1;
-                showActionMessage("Looted Meat & Leather!", "#ff0055");
-            } else {
-                // Turn hostile
-                npc.userData.state = 'hostile';
-                npc.userData.meshes.forEach(m => m.material.color.setHex(0xff0000)); // Turn red
+                // Update Health bar percentage width
+                document.querySelector('#player1-health').style.width = Math.max(0, (player.health / player.maxHealth) * 100) + '%';
             }
         }
 
-        function triggerBigDragonAttack() {
-            showActionMessage("FIRE BLAST!", "#ff5500");
-            
-            // Spawn a massive burst of particles
-            const spawnCount = 100;
-            let spawned = 0;
-            const snoutPosLocal = new THREE.Vector3(0, 1.5, -6);
-            const snoutPosWorld = snoutPosLocal.applyMatrix4(dragonModel.matrixWorld);
-            const positions = particleSystem.geometry.attributes.position.array;
+        // --- Event Listeners ---
 
-            for (let i = 0; i < particles.length && spawned < spawnCount; i++) {
-                if (!particles[i].active) {
-                    particles[i].active = true;
-                    particles[i].life = 2.0; // Particles last slightly longer
-                    
-                    // Set start position with a wider spread
-                    positions[i * 3] = snoutPosWorld.x + (Math.random() - 0.5) * 10;
-                    positions[i * 3 + 1] = snoutPosWorld.y + (Math.random() - 0.5) * 10;
-                    positions[i * 3 + 2] = snoutPosWorld.z + (Math.random() - 0.5) * 10;
-                    
-                    // Explosive outward velocity
-                    const spread = new THREE.Vector3(
-                        (Math.random() - 0.5) * 100,
-                        (Math.random() - 0.5) * 100,
-                        -speed - 300 // Shoot out much faster
-                    );
-                    spread.applyQuaternion(dragonModel.getWorldQuaternion(new THREE.Quaternion()));
-                    particles[i].velocity.copy(spread);
-                    
-                    spawned++;
-                }
+        window.addEventListener('keydown', (event) => {
+            if (!gameStarted || player.dead || enemy.dead || timer === 0) return;
+
+            switch (event.key) {
+                // Player 1
+                case 'd':
+                    keys.d.pressed = true;
+                    player.lastKey = 'd';
+                    break;
+                case 'a':
+                    keys.a.pressed = true;
+                    player.lastKey = 'a';
+                    break;
+                case 'w':
+                    // Jump only if on ground and not stunned
+                    if (player.velocity.y === 0 && player.hitStun === 0) player.velocity.y = -16; 
+                    break;
+                case ' ':
+                    player.attack();
+                    break;
+
+                // Player 2
+                case 'ArrowRight':
+                    keys.ArrowRight.pressed = true;
+                    enemy.lastKey = 'ArrowRight';
+                    break;
+                case 'ArrowLeft':
+                    keys.ArrowLeft.pressed = true;
+                    enemy.lastKey = 'ArrowLeft';
+                    break;
+                case 'ArrowUp':
+                    if (enemy.velocity.y === 0 && enemy.hitStun === 0) enemy.velocity.y = -16;
+                    break;
+                case 'Enter':
+                case '0':
+                    enemy.attack();
+                    break;
             }
-            particleSystem.geometry.attributes.position.needsUpdate = true;
+        });
 
-            // Deal massive AOE damage to any NPCs in front
-            for (let i = npcDragons.length - 1; i >= 0; i--) {
-                const npc = npcDragons[i];
-                const distToDragon = npc.position.distanceTo(dragonModel.position);
-                if (distToDragon < 150) { // Larger range
-                    const toNPC = npc.position.clone().sub(dragonModel.position).normalize();
-                    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(dragonModel.quaternion);
-                    
-                    if (forward.dot(toNPC) > 0.5) { // Wider cone of effect
-                        damageNPC(npc, 100); // Instantly defeat standard NPCs
-                    }
-                }
+        window.addEventListener('keyup', (event) => {
+            switch (event.key) {
+                // Player 1
+                case 'd':
+                    keys.d.pressed = false;
+                    break;
+                case 'a':
+                    keys.a.pressed = false;
+                    break;
+
+                // Player 2
+                case 'ArrowRight':
+                    keys.ArrowRight.pressed = false;
+                    break;
+                case 'ArrowLeft':
+                    keys.ArrowLeft.pressed = false;
+                    break;
             }
-        }
-
-        function triggerBigHumanAttack() {
-            showActionMessage("HEAVY STRIKE!", "#aaaaaa");
-            
-            raycaster.setFromCamera(screenCenter, camera);
-            
-            // Check Trees with longer reach
-            const treeIntersects = raycaster.intersectObjects(trees, true);
-            if (treeIntersects.length > 0 && treeIntersects[0].distance < 45) {
-                let obj = treeIntersects[0].object;
-                while(obj.parent && !obj.userData.isTree) {
-                    obj = obj.parent;
-                    if (obj === scene) break;
-                }
-                if (obj.userData && obj.userData.isTree) {
-                    scene.remove(obj);
-                    const index = trees.indexOf(obj);
-                    if (index > -1) trees.splice(index, 1);
-                    woodCount += 3; // Bonus wood for big attack!
-                    showActionMessage("+3 Wood (Heavy Strike!)", "#4c9a2a");
-                    return; 
-                }
-            }
-
-            // Check NPC Dragons with longer reach
-            const npcIntersects = raycaster.intersectObjects(npcDragons, true);
-            if (npcIntersects.length > 0 && npcIntersects[0].distance < 50) {
-                let npc = npcIntersects[0].object.parent;
-                if (npc.userData.isNPC) {
-                    damageNPC(npc, 100); // 1-hit knockout
-                }
-            }
-        }
-
-        function updateNPCDragons(delta) {
-            const time = clock.elapsedTime;
-            
-            for (let i = npcDragons.length - 1; i >= 0; i--) {
-                const npc = npcDragons[i];
-                const state = npc.userData.state;
-                
-                // Wing animation
-                npc.userData.wingL.rotation.z = Math.sin(time * 5 + npc.userData.timeOffset) * 0.2;
-                npc.userData.wingR.rotation.z = -Math.sin(time * 5 + npc.userData.timeOffset) * 0.2;
-
-                const npcGround = getTerrainHeight(npc.position.x, npc.position.z);
-                npc.position.y = npcGround + 10; // Stick to ground
-
-                const targetObj = isMounted ? dragonModel : player;
-
-                if (state === 'hostile') {
-                    // Chase player
-                    const targetPos = targetObj.position.clone();
-                    targetPos.y = npc.position.y;
-                    npc.lookAt(targetPos);
-                    npc.translateZ(70 * delta); // Run speed
-                    
-                    // Attack player if close enough (simple pushback/damage)
-                    if (npc.position.distanceTo(targetObj.position) < 20) {
-                        showActionMessage("Under Attack!", "#ff0000");
-                        // Push player back slightly
-                        const pushDir = targetObj.position.clone().sub(npc.position).normalize();
-                        targetObj.position.add(pushDir.multiplyScalar(2));
-                        
-                        // Deal continuous damage while in range
-                        takeDamage(20 * delta);
-                    }
-                } else if (state === 'friendly') {
-                    if (npc.userData.hasRider) {
-                        // Hunting logic! Find a wild dragon to attack
-                        let targetWild = null;
-                        let minWildDist = 1500; // Search radius for enemies
-                        npcDragons.forEach(other => {
-                            if (other.userData.state !== 'friendly' && npc.position.distanceTo(other.position) < minWildDist) {
-                                minWildDist = npc.position.distanceTo(other.position);
-                                targetWild = other;
-                            }
-                        });
-
-                        if (targetWild) {
-                            const targetPos = targetWild.position.clone();
-                            targetPos.y = npc.position.y;
-                            npc.lookAt(targetPos);
-                            npc.translateZ(90 * delta); // Fast hunt speed
-
-                            if (npc.position.distanceTo(targetWild.position) < 30) {
-                                damageNPC(targetWild, 40 * delta); // Bite attack
-                                // Visual bobbing for attacking
-                                npc.position.y += Math.sin(time * 20) * 0.5;
-                            }
-                        } else {
-                            // No enemies found, follow player
-                            const dist = npc.position.distanceTo(targetObj.position);
-                            if (dist > 40) {
-                                const targetPos = targetObj.position.clone();
-                                targetPos.y = npc.position.y;
-                                npc.lookAt(targetPos);
-                                npc.translateZ(60 * delta); 
-                            }
-                        }
-                    } else {
-                        // Unmounted friendly: Follow player casually
-                        const dist = npc.position.distanceTo(targetObj.position);
-                        if (dist > 40) {
-                            const targetPos = targetObj.position.clone();
-                            targetPos.y = npc.position.y;
-                            npc.lookAt(targetPos);
-                            npc.translateZ(50 * delta); 
-                        }
-                    }
-                } else {
-                    // Idle: wander slowly
-                    npc.rotation.y += Math.sin(time * 0.5 + npc.userData.timeOffset) * 0.5 * delta;
-                    npc.translateZ(20 * delta);
-                }
-
-                // Check Fire Breath Damage (If player is mounted and breathing fire)
-                if (isMounted && isBreathingFire) {
-                    const distToDragon = npc.position.distanceTo(dragonModel.position);
-                    if (distToDragon < 100) {
-                        // Check if in front of player
-                        const toNPC = npc.position.clone().sub(dragonModel.position).normalize();
-                        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(dragonModel.quaternion);
-                        const dot = forward.dot(toNPC);
-                        
-                        if (dot > 0.7) { // roughly in a cone in front
-                            damageNPC(npc, 50 * delta); // Continuous fire damage
-                        }
-                    }
-                }
-            }
-        }
-
-        function updateTreats(delta) {
-            if (isAdult) return;
-            
-            for (let i = 0; i < treats.length; i++) {
-                const t = treats[i];
-                if (t.active) {
-                    // Spin and bob animation
-                    t.mesh.rotation.y += 2 * delta;
-                    t.mesh.rotation.x += 1 * delta;
-                    t.mesh.position.y += Math.sin(clock.elapsedTime * 5 + i) * 0.05;
-
-                    // Check distance to Human Player
-                    if (player.position.distanceTo(t.mesh.position) < 15) {
-                        t.active = false;
-                        t.mesh.visible = false;
-                        growth += 10;
-                        
-                        if (growth >= maxGrowth) {
-                            growToAdult();
-                        }
-                    }
-                }
-            }
-        }
-
-        function mountDragon() {
-            isMounted = true;
-            hud.style.display = 'block';
-            document.getElementById('human-hud').style.display = 'none';
-            document.getElementById('interact-prompt').style.display = 'none';
-            
-            // Mount the dragon!
-            dragonModel.add(camera);
-            
-            // Position camera on the dragon's neck (local coordinates)
-            camera.position.set(0, 3.5, -2); 
-            camera.quaternion.identity();
-            camera.rotation.set(-0.1, 0, 0); // Tilt down slightly to see over the head
-            
-            yawRate = 0;
-            pitchRate = 0;
-            speed = 0; // reset speed for dragon
-        }
-
-        function dismountDragon() {
-            isMounted = false;
-            hud.style.display = 'none';
-            document.getElementById('human-hud').style.display = 'block';
-            
-            // Position player next to the dragon (further away due to massive size)
-            player.position.copy(dragonModel.position);
-            const offset = new THREE.Vector3(20, 0, 0); // Offset further to the side
-            offset.applyQuaternion(dragonModel.quaternion);
-            player.position.add(offset);
-            
-            // Reattach camera to human
-            player.add(camera);
-            camera.position.set(0, 0, 0);
-            camera.rotation.set(0, 0, 0);
-            
-            // Match player look direction to dragon initially
-            player.quaternion.copy(dragonModel.quaternion);
-            const euler = new THREE.Euler().setFromQuaternion(player.quaternion, 'YXZ');
-            euler.x = 0; // Keep human upright
-            euler.z = 0;
-            player.quaternion.setFromEuler(euler);
-
-            yawRate = 0;
-            pitchRate = 0;
-            speed = 0; // stop human movement
-        }
-
-        function growToAdult() {
-            isAdult = true;
-            growth = maxGrowth;
-            document.getElementById('growth-hud').style.display = 'none';
-            
-            mountDragon();
-
-            // Celebratory takeoff!
-            isGrounded = false;
-            verticalVelocity = 400; // Stronger jump for a heavier dragon
-            speed = 200;
-            pitchRate = 0.1;
-        }
-
-        function updateFlight(delta) {
-            if (!isMounted) {
-                // --- HUMAN WALKING PHASE ---
-                const groundHeight = getTerrainHeight(player.position.x, player.position.z);
-                const humanHeight = 10;
-                player.position.y = groundHeight + humanHeight; // Stick to ground
-
-                // Human looking (Yaw on body, Pitch on camera)
-                player.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), yawRate);
-                camera.rotateX(pitchRate);
-                camera.rotation.x = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, camera.rotation.x));
-                
-                yawRate *= 0.5;
-                pitchRate *= 0.5;
-
-                // Human walking speed control
-                if (keys.w) speed += 200 * delta;
-                else if (keys.s) speed -= 200 * delta;
-                else speed = THREE.MathUtils.lerp(speed, 0, 10 * delta); // Friction
-                
-                speed = Math.max(-40, Math.min(60, speed)); 
-                player.translateZ(-speed * delta);
-
-                // --- DRAGON FOLLOW AI ---
-                const dist = dragonModel.position.distanceTo(player.position);
-                const followDist = isAdult ? 35 : 12; // Stay further back as adult
-                const walkSpeed = isAdult ? 80 : 35; // Faster adult walk speed
-
-                if (dist > followDist) {
-                    // Turn towards player smoothly
-                    const targetPosition = player.position.clone();
-                    targetPosition.y = dragonModel.position.y; // Keep level
-                    dragonModel.lookAt(targetPosition);
-                    dragonModel.translateZ(walkSpeed * delta); 
-                }
-                
-                // Dragon hover/walk animation
-                const dragonGround = getTerrainHeight(dragonModel.position.x, dragonModel.position.z);
-                const adultScale = 3.5; // Make adult dragon much bigger!
-                const scale = isAdult ? adultScale : 0.3 + (growth / maxGrowth) * 0.7;
-                dragonModel.scale.set(scale, scale, scale);
-                
-                // Bobbing walk animation
-                const heightOffset = isAdult ? 10 : scale * 2; // Taller adult legs/body
-                dragonModel.position.y = dragonGround + heightOffset + Math.abs(Math.sin(clock.elapsedTime * 8)) * (dist > followDist ? 1 : 0);
-                
-                // Wing flap animation 
-                wingL.rotation.z = Math.sin(clock.elapsedTime * 10) * 0.3;
-                wingR.rotation.z = -Math.sin(clock.elapsedTime * 10) * 0.3;
-
-                // Mount Prompt Visibility
-                if (isAdult && dist <= 35) { // Show prompt from further away
-                    document.getElementById('interact-prompt').style.display = 'block';
-                } else {
-                    document.getElementById('interact-prompt').style.display = 'none';
-                }
-
-            } else {
-                // --- RIDING ADULT DRAGON PHASE ---
-                const groundHeight = getTerrainHeight(dragonModel.position.x, dragonModel.position.z);
-                const adultHeightOffset = 10; // Match the taller height offset
-
-                // Wing flap animation (faster when flying, slow when grounded)
-                const flapSpeed = isGrounded ? 2 : 15;
-                const flapAmount = isGrounded ? 0.1 : 0.5;
-                wingL.rotation.z = Math.sin(clock.elapsedTime * flapSpeed) * flapAmount;
-                wingR.rotation.z = -Math.sin(clock.elapsedTime * flapSpeed) * flapAmount;
-
-                if (isGrounded) {
-                    // --- DRAGON WALKING ---
-                    dragonModel.position.y = groundHeight + adultHeightOffset;
-
-                    // Level out dragon pitch and roll
-                    const euler = new THREE.Euler().setFromQuaternion(dragonModel.quaternion, 'YXZ');
-                    euler.x = THREE.MathUtils.lerp(euler.x, 0, 10 * delta);
-                    euler.z = THREE.MathUtils.lerp(euler.z, 0, 10 * delta);
-                    dragonModel.quaternion.setFromEuler(euler);
-
-                    // Steering (Yaw only for dragon, pitch allows rider to look up/down)
-                    dragonModel.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), yawRate);
-                    camera.rotateX(pitchRate);
-                    camera.rotation.x = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, camera.rotation.x));
-
-                    yawRate *= 0.5; 
-                    pitchRate *= 0.5;
-
-                    // Ground Speed Control
-                    const walkMaxSpeed = 160; // Increased walking speed for bigger strides
-                    if (keys.w) speed += 200 * delta;
-                    else if (keys.s) speed -= 200 * delta;
-                    else speed = THREE.MathUtils.lerp(speed, 0, 5 * delta); // Friction
-                    
-                    speed = Math.max(-50, Math.min(walkMaxSpeed, speed)); // Allow walking backwards
-                    dragonModel.translateZ(-speed * delta);
-
-                    // Takeoff
-                    if (keys.space) {
-                        isGrounded = false;
-                        verticalVelocity = 400; // Stronger upward burst
-                        speed = Math.max(speed, 150); 
-                        pitchRate = 0.05; 
-                        camera.rotation.x = -0.3; // Reset camera pitch to the new tilted view
-                    }
-
-                } else {
-                    // --- DRAGON FLYING ---
-                    // Handle Speed
-                    if (keys.w) speed += 100 * delta;
-                    if (keys.s) speed -= 100 * delta;
-                    speed = Math.max(minSpeed, Math.min(maxSpeed, speed));
-
-                    // Apply Rotations directly to dragon
-                    dragonModel.rotateX(pitchRate);
-                    dragonModel.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), yawRate);
-
-                    // Auto-leveling and Roll mapping
-                    const targetRoll = yawRate * 15; 
-                    const euler = new THREE.Euler().setFromQuaternion(dragonModel.quaternion, 'YXZ');
-                    euler.z = THREE.MathUtils.lerp(euler.z, targetRoll, 5 * delta);
-                    euler.x = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, euler.x));
-                    dragonModel.quaternion.setFromEuler(euler);
-
-                    // Dampen input rates
-                    pitchRate *= 0.9;
-                    yawRate *= 0.9;
-
-                    // Move Forward
-                    dragonModel.translateZ(-speed * delta);
-
-                    // Add vertical jump burst & decay
-                    dragonModel.position.y += verticalVelocity * delta;
-                    verticalVelocity = THREE.MathUtils.lerp(verticalVelocity, 0, 2.5 * delta);
-
-                    // Landing Check
-                    if (dragonModel.position.y <= groundHeight + adultHeightOffset) {
-                        isGrounded = true;
-                        dragonModel.position.y = groundHeight + adultHeightOffset;
-                        verticalVelocity = 0;
-                    }
-                }
-            }
-        }
-
-        function updateParticles(delta) {
-            const positions = particleSystem.geometry.attributes.position.array;
-            
-            // Spawn new particles (Only when Mounted)
-            if (isMounted && isBreathingFire) {
-                const spawnCount = 15; // More fire particles per frame for massive beast
-                let spawned = 0;
-                
-                // Determine spawn point (from dragon head)
-                const snoutPosLocal = new THREE.Vector3(0, 1.5, -6);
-                const snoutPosWorld = snoutPosLocal.applyMatrix4(dragonModel.matrixWorld);
-
-                for (let i = 0; i < particles.length && spawned < spawnCount; i++) {
-                    if (!particles[i].active) {
-                        particles[i].active = true;
-                        particles[i].life = 1.0;
-                        
-                        // Set start position
-                        positions[i * 3] = snoutPosWorld.x + (Math.random() - 0.5) * 2;
-                        positions[i * 3 + 1] = snoutPosWorld.y + (Math.random() - 0.5) * 2;
-                        positions[i * 3 + 2] = snoutPosWorld.z + (Math.random() - 0.5) * 2;
-                        
-                        // Set velocity (forward from dragon)
-                        const forward = new THREE.Vector3(
-                            (Math.random() - 0.5) * 10,
-                            (Math.random() - 0.5) * 10,
-                            -speed - 150 // Shoot out faster than dragon speed
-                        );
-                        forward.applyQuaternion(dragonModel.getWorldQuaternion(new THREE.Quaternion()));
-                        particles[i].velocity.copy(forward);
-                        
-                        spawned++;
-                    }
-                }
-            }
-
-            // Update existing particles
-            for (let i = 0; i < particles.length; i++) {
-                if (particles[i].active) {
-                    particles[i].life -= delta * 1.5; // Burn out speed
-                    
-                    if (particles[i].life <= 0) {
-                        particles[i].active = false;
-                        // Hide far away
-                        positions[i * 3] = 9999;
-                        positions[i * 3 + 1] = 9999;
-                        positions[i * 3 + 2] = 9999;
-                    } else {
-                        // Move
-                        positions[i * 3] += particles[i].velocity.x * delta;
-                        positions[i * 3 + 1] += particles[i].velocity.y * delta;
-                        positions[i * 3 + 2] += particles[i].velocity.z * delta;
-                        
-                        // Fire rises (buoyancy)
-                        particles[i].velocity.y += 50 * delta;
-                    }
-                }
-            }
-            
-            particleSystem.geometry.attributes.position.needsUpdate = true;
-        }
-
-        function updateHUD() {
-            if (isAdult && isMounted) {
-                speedText.innerText = Math.floor(speed);
-                const speedPercent = ((speed - minSpeed) / (maxSpeed - minSpeed)) * 100;
-                speedBar.style.width = Math.max(0, Math.min(100, speedPercent)) + '%';
-                
-                if (isGrounded) {
-                    modeText.innerText = "WALKING";
-                    modeText.style.color = "#4c9a2a"; // Green
-                } else {
-                    modeText.innerText = "FLYING";
-                    modeText.style.color = "#87CEEB"; // Sky blue
-                }
-            } else {
-                if (!isAdult) {
-                    document.getElementById('growth-text').innerText = Math.floor(growth);
-                    document.getElementById('growth-bar').style.width = growth + '%';
-                }
-                // Update Human Resources
-                document.getElementById('wood-text').innerText = woodCount;
-                document.getElementById('meat-text').innerText = meatCount;
-                document.getElementById('leather-text').innerText = leatherCount;
-            }
-
-            // Update Health Bar
-            const healthPercent = Math.max(0, (playerHealth / maxPlayerHealth) * 100);
-            document.getElementById('health-bar').style.width = healthPercent + '%';
-
-            // Update Cooldown UI
-            const cdText = bigAttackCooldown > 0 ? Math.ceil(bigAttackCooldown) + "s" : "READY";
-            const cdColor = bigAttackCooldown > 0 ? "#ff5555" : "#00ff00";
-            
-            if (document.getElementById('dragon-cd-text')) {
-                document.getElementById('dragon-cd-text').innerText = cdText;
-                document.getElementById('dragon-cd-text').style.color = cdColor;
-            }
-            if (document.getElementById('human-cd-text')) {
-                document.getElementById('human-cd-text').innerText = cdText;
-                document.getElementById('human-cd-text').style.color = cdColor;
-            }
-        }
+        });
     </script>
 </body>
 </html>
