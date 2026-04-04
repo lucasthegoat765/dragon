@@ -268,10 +268,12 @@
 
         // --- Character Data ---
         const characters = {
-            balanced: { id: 'balanced', name: 'Balanced', color: '#3b82f6', hp: 100, atk: 10, speed: 6 },
-            heavy: { id: 'heavy', name: 'Heavy (Bruiser)', color: '#ef4444', hp: 150, atk: 15, speed: 4 },
-            speedster: { id: 'speedster', name: 'Speedster', color: '#10b981', hp: 70, atk: 8, speed: 9 },
-            striker: { id: 'striker', name: 'Striker', color: '#8b5cf6', hp: 60, atk: 25, speed: 7 }
+            ryu: { id: 'ryu', name: 'Ryu', bodyColor: '#eeeeee', skinColor: '#fcdeb3', detailColor: '#ef4444', hp: 100, atk: 10, speed: 6 },
+            ken: { id: 'ken', name: 'Ken', bodyColor: '#ef4444', skinColor: '#fcdeb3', detailColor: '#fbbf24', hp: 100, atk: 10, speed: 6 },
+            zangief: { id: 'zangief', name: 'Zangief', bodyColor: '#ef4444', skinColor: '#f5bca9', detailColor: '#4a3000', hp: 150, atk: 15, speed: 4 },
+            chunli: { id: 'chunli', name: 'Chun Li', bodyColor: '#3b82f6', skinColor: '#fcdeb3', detailColor: '#ffffff', hp: 80, atk: 8, speed: 9 },
+            blanka: { id: 'blanka', name: 'Blanka', bodyColor: '#22c55e', skinColor: '#22c55e', detailColor: '#f97316', hp: 110, atk: 12, speed: 7 },
+            cammy: { id: 'cammy', name: 'Cammy', bodyColor: '#15803d', skinColor: '#fcdeb3', detailColor: '#ef4444', hp: 70, atk: 9, speed: 10 }
         };
 
         let p1Choice = null;
@@ -290,7 +292,9 @@
                 this.height = 150;
                 
                 // Assign stats based on selection
-                this.color = stats.color;
+                this.bodyColor = stats.bodyColor;
+                this.skinColor = stats.skinColor;
+                this.detailColor = stats.detailColor;
                 this.maxHealth = stats.hp;
                 this.health = stats.hp;
                 this.attackPower = stats.atk;
@@ -322,35 +326,43 @@
                 // Flash white when taking damage
                 if (this.colorFlash) {
                     c.fillStyle = this.colorFlash;
+                    c.fillRect(this.position.x, this.position.y, this.width, this.height);
                 } else {
-                    c.fillStyle = this.color;
+                    // Draw Body (Outfit)
+                    c.fillStyle = this.bodyColor;
+                    c.fillRect(this.position.x, this.position.y + 35, this.width, this.height - 35);
+                    
+                    // Draw Head/Skin
+                    c.fillStyle = this.skinColor;
+                    c.fillRect(this.position.x + 5, this.position.y, this.width - 10, 35);
+                    
+                    // Draw Detail (Hair/Headbands)
+                    c.fillStyle = this.detailColor;
+                    c.fillRect(this.position.x + 5, this.position.y, this.width - 10, 12);
                 }
-                
-                // Draw character body
-                c.fillRect(this.position.x, this.position.y, this.width, this.height);
 
-                // Draw "Eye" / Visor to show which way they are looking
-                c.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                // Draw "Eye" to show which way they are looking
+                c.fillStyle = 'rgba(0, 0, 0, 0.8)';
                 if (this.facingRight) {
-                    c.fillRect(this.position.x + 30, this.position.y + 10, 15, 10);
+                    c.fillRect(this.position.x + 30, this.position.y + 15, 6, 6);
                 } else {
-                    c.fillRect(this.position.x + 5, this.position.y + 10, 15, 10);
+                    c.fillRect(this.position.x + 14, this.position.y + 15, 6, 6);
                 }
 
                 // Draw extending "arm" when attacking
                 if (this.isAttacking) {
-                    c.fillStyle = this.color; // Arm matches body color
+                    c.fillStyle = this.skinColor; // Arm matches skin color
                     if (this.facingRight) {
                         c.fillRect(
                             this.position.x + this.width, 
-                            this.position.y + 25, 
+                            this.position.y + 35, 
                             this.attackBox.width, 
                             this.attackBox.height
                         );
                     } else {
                         c.fillRect(
                             this.position.x - this.attackBox.width, 
-                            this.position.y + 25, 
+                            this.position.y + 35, 
                             this.attackBox.width, 
                             this.attackBox.height
                         );
@@ -366,10 +378,10 @@
                 // Update attack box position to follow player and direction
                 if (this.facingRight) {
                     this.attackBox.position.x = this.position.x + this.width;
-                    this.attackBox.position.y = this.position.y + 25; 
+                    this.attackBox.position.y = this.position.y + 35; 
                 } else {
                     this.attackBox.position.x = this.position.x - this.attackBox.width;
-                    this.attackBox.position.y = this.position.y + 25;
+                    this.attackBox.position.y = this.position.y + 35;
                 }
 
                 // Movement physics
@@ -443,14 +455,14 @@
                 // P1 Button
                 const btn1 = document.createElement('button');
                 btn1.className = 'char-btn';
-                btn1.innerHTML = `<span style="color:${char.color}; font-size:1.2rem;">${char.name}</span><span class="stat-text">HP: ${char.hp} | ATK: ${char.atk} | SPD: ${char.speed}</span>`;
+                btn1.innerHTML = `<span style="color:${char.bodyColor}; font-size:1.2rem; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;">${char.name}</span><span class="stat-text">HP: ${char.hp} | ATK: ${char.atk} | SPD: ${char.speed}</span>`;
                 btn1.onclick = () => selectChar(1, char, btn1);
                 p1Container.appendChild(btn1);
 
                 // P2 Button
                 const btn2 = document.createElement('button');
                 btn2.className = 'char-btn';
-                btn2.innerHTML = `<span style="color:${char.color}; font-size:1.2rem;">${char.name}</span><span class="stat-text">HP: ${char.hp} | ATK: ${char.atk} | SPD: ${char.speed}</span>`;
+                btn2.innerHTML = `<span style="color:${char.bodyColor}; font-size:1.2rem; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;">${char.name}</span><span class="stat-text">HP: ${char.hp} | ATK: ${char.atk} | SPD: ${char.speed}</span>`;
                 btn2.onclick = () => selectChar(2, char, btn2);
                 p2Container.appendChild(btn2);
             });
@@ -496,8 +508,8 @@
             // Reset UI Health bars to visually match character choices
             document.querySelector('#player1-health').style.width = '100%';
             document.querySelector('#player2-health').style.width = '100%';
-            document.querySelector('#player1-health').style.backgroundColor = p1Choice.color;
-            document.querySelector('#player2-health').style.backgroundColor = p2Choice.color;
+            document.querySelector('#player1-health').style.backgroundColor = p1Choice.bodyColor;
+            document.querySelector('#player2-health').style.backgroundColor = p2Choice.bodyColor;
             
             resultUI.style.display = 'none';
             timer = 60;
@@ -526,10 +538,10 @@
                 resultUI.style.color = 'white';
             } else if (p1Percent > p2Percent) {
                 resultUI.innerHTML = 'PLAYER 1 WINS';
-                resultUI.style.color = p1Choice.color;
+                resultUI.style.color = p1Choice.bodyColor;
             } else {
                 resultUI.innerHTML = 'PLAYER 2 WINS';
-                resultUI.style.color = p2Choice.color;
+                resultUI.style.color = p2Choice.bodyColor;
             }
         }
 
